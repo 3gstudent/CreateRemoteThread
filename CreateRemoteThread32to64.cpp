@@ -316,40 +316,40 @@ int main()
       if (!pRemoteParam) {  
           MessageBox(NULL, "Alloc memory failed !","Notice", MB_ICONINFORMATION | MB_OK);  
           return 0;  
-    }  
-    if (!WriteProcessMemory(hTargetProcess ,pRemoteParam, &remoteData, sizeof(remoteData), 0)) {  
+      }  
+      if (!WriteProcessMemory(hTargetProcess ,pRemoteParam, &remoteData, sizeof(remoteData), 0)) {  
           MessageBox(NULL, "Write data to target process failed !","Notice", MB_ICONINFORMATION | MB_OK);  
           return 0;  
-    }  
+      }  
    
-    HANDLE hRemoteThread = CreateRemoteThread(  
+      HANDLE hRemoteThread = CreateRemoteThread(  
       hTargetProcess, NULL, 0, (DWORD (__stdcall *)(void *))pRemoteThread,   
       pRemoteParam, 0, &dwWriteBytes);  
-    if (!hRemoteThread) {  
+      if (!hRemoteThread) {  
           MessageBox(NULL, "Create remote thread failed !", "Notice",  MB_ICONINFORMATION | MB_OK);  
           return 0;  
-    }  
-    CloseHandle(hRemoteThread);  
-    FreeLibrary(hUser32);  
+      }  
+      CloseHandle(hRemoteThread);  
+      FreeLibrary(hUser32);  
     }
     else
     {
-    printf("64-bit process\n");
-    char *cmd="cmd /c start calc.exe";
-    int CmdSize=strlen(cmd);
+      printf("64-bit process\n");
+      char *cmd="cmd /c start calc.exe";
+      int CmdSize=strlen(cmd);
 
-    HANDLE                hProc, hThread;
-    BOOL                  bStatus=FALSE;
-    LPVOID                pCode=NULL, pData=NULL;
-    SIZE_T                written;
-    DWORD                 idx, ec;
-    pCreateRemoteThread64 CreateRemoteThread64=NULL;
+      HANDLE                hProc, hThread;
+      BOOL                  bStatus=FALSE;
+      LPVOID                pCode=NULL, pData=NULL;
+      SIZE_T                written;
+      DWORD                 idx, ec;
+      pCreateRemoteThread64 CreateRemoteThread64=NULL;
 
-    // try open the process
-    printf("  [ opening process id %lu\n", dwProcessId);
-    hProc = OpenProcess (PROCESS_ALL_ACCESS, FALSE, dwProcessId);
-    if (hProc != NULL)
-    {
+      // try open the process
+      printf("  [ opening process id %lu\n", dwProcessId);
+      hProc = OpenProcess (PROCESS_ALL_ACCESS, FALSE, dwProcessId);
+      if (hProc != NULL)
+      {
           // allocate memory there
           printf("  [ allocating %lu bytes of XRW memory in process for code\n", EXECPIC_SIZE);
           pCode=VirtualAllocEx (hProc, 0, EXECPIC_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -408,6 +408,6 @@ int main()
       MessageBox(NULL,"OpenProcess","Notice", MB_ICONINFORMATION | MB_OK);  
     }
     if (CreateRemoteThread64!=NULL) free_func(CreateRemoteThread64);
-    return bStatus;
+      return bStatus;
    }
 }
