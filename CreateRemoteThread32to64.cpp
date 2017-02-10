@@ -172,18 +172,18 @@ typedef int (__stdcall * PFN_MESSAGEBOX)(HWND, LPCTSTR, LPCTSTR, DWORD);
 
 BOOL IsWow64(HANDLE hProcess)
 {
-  typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
-  LPFN_ISWOW64PROCESS fnIsWow64Process;
+    typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
+    LPFN_ISWOW64PROCESS fnIsWow64Process;
   
-  BOOL bIsWow64 = FALSE;
-  fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(
-  GetModuleHandle("kernel32"),"IsWow64Process");
+    BOOL bIsWow64 = FALSE;
+    fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(
+    GetModuleHandle("kernel32"),"IsWow64Process");
 
-  if (NULL != fnIsWow64Process)
-  {
-    fnIsWow64Process(hProcess, &bIsWow64);  
-  }
-  return bIsWow64;
+    if (NULL != fnIsWow64Process)
+    {
+        fnIsWow64Process(hProcess, &bIsWow64);  
+    }
+    return bIsWow64;
 }
 
 DWORD processNameToId(LPCTSTR lpszProcessName)  
