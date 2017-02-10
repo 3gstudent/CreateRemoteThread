@@ -223,16 +223,16 @@ BOOL Is64BitOS()
 
 LPVOID init_func (char *asmcode, DWORD len)
 {
-  LPVOID sc=NULL;
-  // allocate write/executable memory for code
-  sc = VirtualAlloc (0, len, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-  if (sc!=NULL) {
-    // copy code
-    memcpy (sc, asmcode, len);
-  } else {
-  MessageBox(NULL,"VirtualAlloc()","Notice", MB_ICONINFORMATION | MB_OK);  
-  }
-  return sc;
+    LPVOID sc=NULL;
+    // allocate write/executable memory for code
+    sc = VirtualAlloc (0, len, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    if (sc!=NULL) {
+        // copy code
+        memcpy (sc, asmcode, len);
+    } else {
+    MessageBox(NULL,"VirtualAlloc()","Notice", MB_ICONINFORMATION | MB_OK);  
+    }
+    return sc;
 }
 
 DWORD __stdcall threadProc(LPVOID lParam)  
@@ -240,7 +240,7 @@ DWORD __stdcall threadProc(LPVOID lParam)
     RemoteParam* pRP = (RemoteParam*)lParam;  
     PFN_MESSAGEBOX pfnMessageBox;  
     pfnMessageBox = (PFN_MESSAGEBOX)pRP->dwMessageBox;  
-  pfnMessageBox(NULL, pRP->szMsg, pRP->szMsg, 0);  
+    pfnMessageBox(NULL, pRP->szMsg, pRP->szMsg, 0);  
     return 0;  
 }  
 
@@ -249,101 +249,91 @@ bool enableDebugPriv()
     HANDLE hToken;  
     LUID sedebugnameValue;  
     TOKEN_PRIVILEGES tkp;     
-    if (!OpenProcessToken(GetCurrentProcess(),   
-        TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {  
-        return false;  
+    if (!OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {  
+         return false;  
     }  
     if (!LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &sedebugnameValue)) {  
-        CloseHandle(hToken);  
-        return false;  
+         CloseHandle(hToken);  
+         return false;  
     }  
     tkp.PrivilegeCount = 1;  
     tkp.Privileges[0].Luid = sedebugnameValue;  
     tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;  
     if (!AdjustTokenPrivileges(hToken, FALSE, &tkp, sizeof(tkp), NULL, NULL)) {  
-        CloseHandle(hToken);  
-        return false;  
+         CloseHandle(hToken);  
+         return false;  
     }  
     return true;  
 }  
   
 void free_func (LPVOID func) {
-  if (func!=NULL) {
-    VirtualFree(func, 0, MEM_RELEASE);
-  }
+    if (func!=NULL) {
+         VirtualFree(func, 0, MEM_RELEASE);
+    }
 }
 
 int main()
 {
   
-  BOOL           bWow64;  
-  char *szExeName="calc.exe";  
+    BOOL           bWow64;  
+    char *szExeName="calc.exe";  
     DWORD dwProcessId = processNameToId(szExeName);  
     if (dwProcessId == 0) {  
-        MessageBox(NULL, "The target process have not been found !",  
-            "Notice", MB_ICONINFORMATION | MB_OK);  
-        return -1;  
+         MessageBox(NULL, "The target process have not been found !","Notice", MB_ICONINFORMATION | MB_OK);  
+         return -1;  
     }  
     HANDLE hTargetProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);     
     if (!hTargetProcess) {  
-        MessageBox(NULL, "Open target process failed !",   
-            "Notice", MB_ICONINFORMATION | MB_OK);  
-        return 0;  
+         MessageBox(NULL, "Open target process failed !","Notice", MB_ICONINFORMATION | MB_OK);  
+         return 0;  
     }  
-  bWow64 = IsWow64(hTargetProcess);
-  if(bWow64||!Is64BitOS())
-  {
-    printf("32-bit process\n"); 
-    const DWORD dwThreadSize = 4096;  
-    DWORD dwWriteBytes;  
-    enableDebugPriv();  
-    void* pRemoteThread = VirtualAllocEx(hTargetProcess, 0,   
-      dwThreadSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);  
-    if (!pRemoteThread) {  
-      MessageBox(NULL, "Alloc memory in target process failed !",   
-        "notice", MB_ICONINFORMATION | MB_OK);  
-      return 0;  
-    }    
-    if (!WriteProcessMemory(hTargetProcess,   
-            pRemoteThread, &threadProc, dwThreadSize, 0)) {  
-      MessageBox(NULL, "Write data to target process failed !",   
-            "Notice", MB_ICONINFORMATION | MB_OK);  
-      return 0;  
-    }  
-    RemoteParam remoteData;  
-    ZeroMemory(&remoteData, sizeof(RemoteParam));  
+    bWow64 = IsWow64(hTargetProcess);
+    if(bWow64||!Is64BitOS())
+    {
+      printf("32-bit process\n"); 
+      const DWORD dwThreadSize = 4096;  
+      DWORD dwWriteBytes;  
+      enableDebugPriv();  
+      void* pRemoteThread = VirtualAllocEx(hTargetProcess, 0,dwThreadSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);  
+      if (!pRemoteThread) {  
+          MessageBox(NULL, "Alloc memory in target process failed !","notice", MB_ICONINFORMATION | MB_OK);  
+          return 0;  
+      }    
+      if (!WriteProcessMemory(hTargetProcess,pRemoteThread, &threadProc, dwThreadSize, 0)) {  
+          MessageBox(NULL, "Write data to target process failed !", "Notice", MB_ICONINFORMATION | MB_OK);  
+          return 0;  
+      }  
+      RemoteParam remoteData;  
+      ZeroMemory(&remoteData, sizeof(RemoteParam));  
    
-    HINSTANCE hUser32 = LoadLibrary("User32.dll");  
-    remoteData.dwMessageBox = (DWORD)GetProcAddress(hUser32, "MessageBoxA");  
-    strcat_s(remoteData.szMsg, "Hello＼0");  
+      HINSTANCE hUser32 = LoadLibrary("User32.dll");  
+      remoteData.dwMessageBox = (DWORD)GetProcAddress(hUser32, "MessageBoxA");  
+      strcat_s(remoteData.szMsg, "Hello＼0");  
   
-    RemoteParam* pRemoteParam = (RemoteParam*)VirtualAllocEx(  
-    hTargetProcess , 0, sizeof(RemoteParam), MEM_COMMIT, PAGE_READWRITE);  
+      RemoteParam* pRemoteParam = (RemoteParam*)VirtualAllocEx(  
+      hTargetProcess , 0, sizeof(RemoteParam), MEM_COMMIT, PAGE_READWRITE);  
    
-    if (!pRemoteParam) {  
-      MessageBox(NULL, "Alloc memory failed !",   
-        "Notice", MB_ICONINFORMATION | MB_OK);  
-      return 0;  
+      if (!pRemoteParam) {  
+          MessageBox(NULL, "Alloc memory failed !","Notice", MB_ICONINFORMATION | MB_OK);  
+          return 0;  
     }  
-    if (!WriteProcessMemory(hTargetProcess ,  
-        pRemoteParam, &remoteData, sizeof(remoteData), 0)) {  
-      MessageBox(NULL, "Write data to target process failed !",   
-        "Notice", MB_ICONINFORMATION | MB_OK);  
-      return 0;  
+    if (!WriteProcessMemory(hTargetProcess ,pRemoteParam, &remoteData, sizeof(remoteData), 0)) {  
+          MessageBox(NULL, "Write data to target process failed !","Notice", MB_ICONINFORMATION | MB_OK);  
+          return 0;  
     }  
    
     HANDLE hRemoteThread = CreateRemoteThread(  
       hTargetProcess, NULL, 0, (DWORD (__stdcall *)(void *))pRemoteThread,   
       pRemoteParam, 0, &dwWriteBytes);  
     if (!hRemoteThread) {  
-      MessageBox(NULL, "Create remote thread failed !", "Notice",  MB_ICONINFORMATION | MB_OK);  
-      return 0;  
+          MessageBox(NULL, "Create remote thread failed !", "Notice",  MB_ICONINFORMATION | MB_OK);  
+          return 0;  
     }  
     CloseHandle(hRemoteThread);  
     FreeLibrary(hUser32);  
-   }
-   else
-  {
+    }
+    else
+    {
     printf("64-bit process\n");
     char *cmd="cmd /c start calc.exe";
     int CmdSize=strlen(cmd);
@@ -360,34 +350,33 @@ int main()
     hProc = OpenProcess (PROCESS_ALL_ACCESS, FALSE, dwProcessId);
     if (hProc != NULL)
     {
-      // allocate memory there
-      printf("  [ allocating %lu bytes of XRW memory in process for code\n", EXECPIC_SIZE);
-      pCode=VirtualAllocEx (hProc, 0, EXECPIC_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-      if (pCode != NULL)
-      {
-        // write the code
-        printf("  [ writing %lu bytes of code to 0x%p\n", EXECPIC_SIZE, pCode);
-        bStatus=WriteProcessMemory (hProc, pCode, EXECPIC, EXECPIC_SIZE, &written);
-        if (bStatus) {
-          if (cmd != NULL) {
-            printf("  [ allocating %lu bytes of RW memory in process for parameter\n", CmdSize);
-            pData=VirtualAllocEx (hProc, 0, CmdSize+1, MEM_COMMIT, PAGE_READWRITE);
-            if (pData != NULL)
-            {
-              printf("  [ writing %lu bytes of data to 0x%p\n", CmdSize, pData);
-              bStatus=WriteProcessMemory (hProc, pData, cmd, CmdSize, &written);
+          // allocate memory there
+          printf("  [ allocating %lu bytes of XRW memory in process for code\n", EXECPIC_SIZE);
+          pCode=VirtualAllocEx (hProc, 0, EXECPIC_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+          if (pCode != NULL)
+          {
+            // write the code
+            printf("  [ writing %lu bytes of code to 0x%p\n", EXECPIC_SIZE, pCode);
+            bStatus=WriteProcessMemory (hProc, pCode, EXECPIC, EXECPIC_SIZE, &written);
+            if (bStatus) {
+              if (cmd != NULL) {
+                printf("  [ allocating %lu bytes of RW memory in process for parameter\n", CmdSize);
+                pData=VirtualAllocEx (hProc, 0, CmdSize+1, MEM_COMMIT, PAGE_READWRITE);
+              if (pData != NULL)
+              {
+                  printf("  [ writing %lu bytes of data to 0x%p\n", CmdSize, pData);
+                  bStatus=WriteProcessMemory (hProc, pData, cmd, CmdSize, &written);
               if (!bStatus) {
-                printf ("  [ warning: unable to allocate write parameters to process...");
+                  printf ("  [ warning: unable to allocate write parameters to process...");
               }
             }
           }
           printf("  [ creating thread\n");
           hThread=NULL;
           CreateRemoteThread64=(pCreateRemoteThread64)
-            init_func(CREATETHREADPIC, CREATETHREADPIC_SIZE);
+          init_func(CREATETHREADPIC, CREATETHREADPIC_SIZE);
 
-          CreateRemoteThread64 (hProc, NULL, 0,
-            (LPTHREAD_START_ROUTINE)pCode, pData, 0, 0, &hThread);
+          CreateRemoteThread64 (hProc, NULL, 0,(LPTHREAD_START_ROUTINE)pCode, pData, 0, 0, &hThread);
 
           if (hThread != NULL)
           {
@@ -404,15 +393,15 @@ int main()
           } else {
             MessageBox(NULL,"CreateRemoteThread","Notice", MB_ICONINFORMATION | MB_OK);  
           }
-        }
-        if (idx==0) {
-          VirtualFreeEx (hProc, pCode, 0, MEM_RELEASE);
+          }
+          if (idx==0) {
+            VirtualFreeEx (hProc, pCode, 0, MEM_RELEASE);
           if (pData!=NULL) {
             VirtualFreeEx (hProc, pData, 0, MEM_RELEASE);
           }
-        }
-      } else {
-        MessageBox(NULL,"VirtualFreeEx()","Notice", MB_ICONINFORMATION | MB_OK);  
+          }
+        } else {
+          MessageBox(NULL,"VirtualFreeEx()","Notice", MB_ICONINFORMATION | MB_OK);  
       }
       CloseHandle (hProc);
     } else {
