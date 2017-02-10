@@ -1,5 +1,5 @@
 # CreateRemoteThread
-From 32-bit process to 64-bit process
+CreateRemoteThread from 32-bit process to 64-bit process
 
 Learn from:
 
